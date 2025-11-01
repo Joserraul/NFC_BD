@@ -21,12 +21,15 @@ module.exports = (userManager) => {
     // POST /login: Authentication
     router.post('/login', async (req, res) => {
         try {
-            const { usuario, contrasena } = req.body;
-            if (!usuario || !contrasena) {
-                return res.status(400).json({ error: "Missing username or password fields." });
+            // Accept either english or spanish keys
+            const { username, email, password, usuario, contrasena } = req.body;
+            const identifier = username || email || usuario;
+            const rawPassword = password || contrasena;
+            if (!identifier || !rawPassword) {
+                return res.status(400).json({ error: "Missing username/email or password fields." });
             }
-            
-            const result = await userManager.login(usuario, contrasena);
+
+            const result = await userManager.login(identifier, rawPassword);
             res.status(200).json(result);
         } catch (error) {
             res.status(401).json({ error: error.message });

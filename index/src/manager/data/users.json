@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "correo@yimail.com",
+    "password": "$2b$10$5GGeyBNavl50tGyGdf4NxeMCzVctp7Tfpy4eanxSxWlbn24IGX0/y",
+    "phone": "9238932",
+    "department": "quimicos",
+    "idCard": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "createdAt": 1762022910976,
+    "role": "admin",
+    "active": true
+  }
+]

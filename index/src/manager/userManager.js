@@ -18,7 +18,20 @@ class UserManager {
         this.users = [];
         await this.save();
       } else {
-        this.users = JSON.parse(data);
+        const raw = JSON.parse(data);
+        // Normalize loaded users to English field names
+        this.users = raw.map(u => ({
+          id: Number(u.id) || (u.id ? Number(u.id) : undefined),
+          username: u.username || u.usuario || '',
+          email: u.email || u.correo || '',
+          password: u.password || u.contrasena || '',
+          phone: u.phone || u.telefono || '',
+          department: u.department || u.departamento || '',
+          idCard: u.idCard || u.IDcard || '',
+          createdAt: u.createdAt || u.fechaCreacion || Date.now(),
+          role: u.role || u.rol || 'usuario',
+          active: typeof u.active === 'boolean' ? u.active : (u.active !== undefined ? u.active : true)
+        }));
       }
     } catch (error) {
       if (error.code === 'ENOENT') {
@@ -44,59 +57,75 @@ class UserManager {
   async createUser(userData) {
     await this.listUsers(false);
 
-    const requiredFields = ['contrasena', 'correo', 'telefono', 'departamento', 'usuario'];
-    const missingFields = requiredFields.filter(field => !userData[field]);
-    
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}.`);
+    // Accept both Spanish and English input keys
+    const username = userData.username || userData.usuario;
+    const email = userData.email || userData.correo;
+    const rawPassword = userData.password || userData.contrasena;
+    const phone = userData.phone || userData.telefono || '';
+    const department = userData.department || userData.departamento || '';
+    const idCardRaw = userData.idCard || userData.IDcard || '';
+    const role = userData.role || userData.rol || 'usuario';
+
+    const required = { username, email, rawPassword, phone, department };
+    const missing = Object.keys(required).filter(k => !required[k]);
+    if (missing.length > 0) {
+      throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
-    if (this.users.some(u => u.usuario === userData.usuario)) {
-      throw new Error(`Username '${userData.usuario}' is already in use.`);
+
+    // Uniqueness checks against normalized storage
+    if (this.users.some(u => u.username === username)) {
+      throw new Error(`Username '${username}' is already in use.`);
     }
-    if (this.users.some(u => u.correo === userData.correo)) {
-      throw new Error(`Email '${userData.correo}' is already registered.`);
+    if (this.users.some(u => u.email === email)) {
+      throw new Error(`Email '${email}' is already registered.`);
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(userData.contrasena, salt);
+    const hashedPassword = await bcrypt.hash(rawPassword, salt);
 
     const emptyIDCardEncrypted = crypto
       .createHash('sha256')
-      .update('')
+      .update(idCardRaw || '')
       .digest('hex');
 
     const newUser = {
       id: this.users.length > 0 ? this.users[this.users.length - 1].id + 1 : 1,
-      ...userData,
-      contrasena: hashedPassword,
-      IDcard: emptyIDCardEncrypted,
-      fechaCreacion: Date.now()
+      username,
+      email,
+      password: hashedPassword,
+      phone,
+      department,
+      idCard: emptyIDCardEncrypted,
+      createdAt: Date.now(),
+      role,
+      active: true
     };
 
     this.users.push(newUser);
     await this.save();
 
-    const { contrasena, secret: userSecret, ...userWithoutSecurity } = newUser;
-    return userWithoutSecurity;
+    const { password, ...userPublic } = newUser;
+    return userPublic;
   }
-  
-  async login(usuario, contrasena) {
+  async login(identifier, rawPassword) {
     await this.listUsers(false);
-    
-    const user = this.users.find(u => u.usuario === usuario);
-    if (!user) {
-        throw new Error("Incorrect username or password.");
-    }
-    
-  const passwordMatches = await bcrypt.compare(contrasena, user.contrasena);
-  if (!passwordMatches) {
-    throw new Error("Incorrect username or password.");
-  }
 
-  const { contrasena: userPass, ...userPublic } = user;
-    return { 
-        message: "Login successful",
-        usuario: userPublic
+    // identifier can be username or email (also accept spanish param names)
+    const id = identifier || identifier === 0 ? identifier : null;
+    const user = this.users.find(u => u.username === id || u.email === id || u.usuario === id || u.correo === id);
+    if (!user) {
+      throw new Error('Incorrect username or password.');
+    }
+
+    const passwordMatches = await bcrypt.compare(rawPassword, user.password);
+    if (!passwordMatches) {
+      throw new Error('Incorrect username or password.');
+    }
+
+    const { password, ...userPublic } = user;
+    return {
+      message: 'Login successful',
+      user: userPublic
     };
   }
 
@@ -104,14 +133,26 @@ class UserManager {
     try {
       const data = await fs.readFile(this.path, 'utf-8');
       const users = JSON.parse(data || '[]');
-      this.users = users.map(u => ({ ...u, id: Number(u.id) }));
+      this.users = users.map(u => ({
+        id: Number(u.id) || (u.id ? Number(u.id) : undefined),
+        username: u.username || u.usuario || '',
+        email: u.email || u.correo || '',
+        password: u.password || u.contrasena || '',
+        phone: u.phone || u.telefono || '',
+        department: u.department || u.departamento || '',
+        idCard: u.idCard || u.IDcard || '',
+        createdAt: u.createdAt || u.fechaCreacion || Date.now(),
+        role: u.role || u.rol || 'usuario',
+        active: typeof u.active === 'boolean' ? u.active : (u.active !== undefined ? u.active : true)
+      }));
 
       if (safeMode) {
-          return this.users.map(u => {
-              const { contrasena, secret, ...userPublic } = u; 
-              return userPublic;
-          });
+        return this.users.map(u => {
+          const { password, ...userPublic } = u;
+          return userPublic;
+        });
       }
+
       return this.users;
 
     } catch (error) {
@@ -134,7 +175,7 @@ class UserManager {
       throw new Error(`User with ID ${idSearched} not found.`);
     }
 
-    const { contrasena, secret, ...userPublic } = user;
+    const { password, ...userPublic } = user;
     return userPublic;
   }
 
@@ -148,37 +189,46 @@ class UserManager {
       throw new Error(`User with ID ${idToUpdate} not found.`);
     }
 
-    const allowedFields = ['contrasena', 'correo', 'telefono', 'departamento', 'usuario', 'IDcard'];
+    // Accept updates in Spanish or English; map to normalized English keys
+    const keyMap = {
+      'contrasena': 'password', 'password': 'password',
+      'correo': 'email', 'email': 'email',
+      'telefono': 'phone', 'phone': 'phone',
+      'departamento': 'department', 'department': 'department',
+      'usuario': 'username', 'username': 'username',
+      'IDcard': 'idCard', 'idCard': 'idCard',
+      'rol': 'role', 'role': 'role',
+      'active': 'active'
+    };
+
     const changes = {};
     let mustRehash = false;
 
     Object.keys(updateData).forEach(key => {
-      if (allowedFields.includes(key) && key !== 'id') {
-        changes[key] = updateData[key];
-        if (key === 'contrasena') {
-            mustRehash = true;
-        }
+      const norm = keyMap[key];
+      if (norm && key !== 'id') {
+        changes[norm] = updateData[key];
+        if (norm === 'password') mustRehash = true;
       }
     });
 
     if (Object.keys(changes).length === 0) {
         throw new Error("No valid fields provided for update.");
     }
-    
-  if (mustRehash) {
-    const salt = await bcrypt.genSalt(10);
-    const newHashedPassword = await bcrypt.hash(changes.contrasena, salt);
-    changes.contrasena = newHashedPassword;
-  }
-    
-    if (changes.IDcard) {
-        const newHashedIDcard = crypto
-            .createHash('sha256')
-            .update(changes.IDcard)
-            .digest('hex');
-        changes.IDcard = newHashedIDcard;
+    if (mustRehash) {
+      const salt = await bcrypt.genSalt(10);
+      const newHashedPassword = await bcrypt.hash(changes.password, salt);
+      changes.password = newHashedPassword;
     }
-    
+
+    if (changes.idCard) {
+      const newHashedIDcard = crypto
+        .createHash('sha256')
+        .update(changes.idCard)
+        .digest('hex');
+      changes.idCard = newHashedIDcard;
+    }
+
     this.users[index] = {
       ...this.users[index],
       ...changes,
@@ -187,7 +237,7 @@ class UserManager {
 
     await this.save();
 
-    const { contrasena, secret, ...userPublic } = this.users[index];
+    const { password, ...userPublic } = this.users[index];
     return userPublic;
   }
 
@@ -204,7 +254,7 @@ class UserManager {
     const [deleted] = this.users.splice(index, 1);
     await this.save();
 
-    const { contrasena, secret, ...userPublic } = deleted;
+    const { password, ...userPublic } = deleted;
     return userPublic;
   }
 }
