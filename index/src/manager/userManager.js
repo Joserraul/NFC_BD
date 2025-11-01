@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 class UserManager {
   constructor(filepath) {
@@ -56,23 +57,18 @@ class UserManager {
       throw new Error(`Email '${userData.correo}' is already registered.`);
     }
 
-    const secret = crypto.randomBytes(64).toString('hex');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.contrasena, salt);
 
-    const hashedPassword = crypto
-      .createHmac("sha256", secret)
-      .update(userData.contrasena)
-      .digest("hex");
-      
     const emptyIDCardEncrypted = crypto
-        .createHash('sha256')
-        .update('')
-        .digest('hex');
+      .createHash('sha256')
+      .update('')
+      .digest('hex');
 
     const newUser = {
       id: this.users.length > 0 ? this.users[this.users.length - 1].id + 1 : 1,
       ...userData,
       contrasena: hashedPassword,
-      secret: secret,
       IDcard: emptyIDCardEncrypted,
       fechaCreacion: Date.now()
     };
@@ -92,16 +88,12 @@ class UserManager {
         throw new Error("Incorrect username or password.");
     }
     
-    const inputHash = crypto
-        .createHmac("sha256", user.secret)
-        .update(contrasena)
-        .digest("hex");
-        
-    if (user.contrasena !== inputHash) {
-        throw new Error("Incorrect username or password.");
-    }
+  const passwordMatches = await bcrypt.compare(contrasena, user.contrasena);
+  if (!passwordMatches) {
+    throw new Error("Incorrect username or password.");
+  }
 
-    const { contrasena: userPass, secret, ...userPublic } = user;
+  const { contrasena: userPass, ...userPublic } = user;
     return { 
         message: "Login successful",
         usuario: userPublic
@@ -173,13 +165,11 @@ class UserManager {
         throw new Error("No valid fields provided for update.");
     }
     
-    if (mustRehash) {
-        const newHashedPassword = crypto
-            .createHmac("sha256", this.users[index].secret)
-            .update(changes.contrasena)
-            .digest("hex");
-        changes.contrasena = newHashedPassword;
-    }
+  if (mustRehash) {
+    const salt = await bcrypt.genSalt(10);
+    const newHashedPassword = await bcrypt.hash(changes.contrasena, salt);
+    changes.contrasena = newHashedPassword;
+  }
     
     if (changes.IDcard) {
         const newHashedIDcard = crypto
