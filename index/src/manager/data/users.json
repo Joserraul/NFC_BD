@@ -3,12 +3,12 @@
     "id": 1,
     "username": "admin",
     "email": "correo@yimail.com",
-    "password": "$2b$10$5GGeyBNavl50tGyGdf4NxeMCzVctp7Tfpy4eanxSxWlbn24IGX0/y",
+    "password": "$2b$10$0MY9vEE.pguOi27Gvwk/4O/ESwQg5S/9hXMA3jdIi.pdhnudP7B7C",
     "phone": "9238932",
     "department": "quimicos",
-    "idCard": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "createdAt": 1762022910976,
-    "role": "admin",
+    "idCard": "2a5fa9c42f118f25cc24894aa9b373e0f8b6ac208a9f0df9c03385e6e80ab70f",
+    "createdAt": 1762283619089,
+    "role": "usuario",
     "active": true
   }
 ]

@@ -30,6 +30,31 @@ app.get('/', (req, res) => {
     res.send('API running. Access user routes at /api/users');
 });
 
+// Endpoint used por el lector (ESP32) para verificar UID de tarjeta
+const crypto = require('crypto');
+app.post('/api/verify', express.json(), async (req, res) => {
+    try {
+        const { uid } = req.body;
+        if (!uid) return res.status(400).json({ status: 'ERROR', message: 'uid required' });
+
+        // hash del uid para comparar con idCard almacenado (se usa SHA256 en userManager)
+        const uidHash = crypto.createHash('sha256').update(uid).digest('hex');
+
+        // obtener usuarios (no seguro-mode) y buscar match en idCard
+        const users = await userManager.listUsers(false);
+        const found = users.find(u => u.idCard === uidHash);
+
+        if (found) {
+            return res.json({ status: 'OK', user: found.username || found.email || null });
+        }
+
+        return res.json({ status: 'DENIED' });
+    } catch (err) {
+        console.error('Error en /api/verify:', err);
+        return res.status(500).json({ status: 'ERROR', message: 'internal' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`User routes available at http://localhost:${PORT}/api/users`);
