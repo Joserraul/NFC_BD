@@ -3,6 +3,21 @@ const fs = require('fs').promises;
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
+/**
+ * @UserManager Clase para gestionar usuarios almacenados en un archivo JSON
+ * Métodos:
+ * - createUser(userData): Crea un nuevo usuario con los datos proporcionados.
+ * - listUsers(noSecure): Obtiene una lista de usuarios (seguro o no seguro).
+ * - getUserById(id): Obtiene un usuario por su ID.
+ * - updateUser(id, updateData): Actualiza los datos de un usuario existente.
+ * - deleteUser(id): Elimina un usuario por su ID.
+ * - login(identifier, password): Autentica un usuario con el identificador y la contraseña proporcionados.
+ * Nota: El identificador puede ser el nombre de usuario o el correo electrónico.
+ * Los datos del usuario se normalizan para aceptar tanto nombres de campos en inglés como en español.
+ * Los campos sensibles como contraseñas se manejan de forma segura (hashing).
+ * Los ID de tarjetas se almacenan como hashes SHA256 para mayor seguridad.
+ */
+
 class UserManager {
   constructor(filepath) {
     this.path = path.resolve(filepath);

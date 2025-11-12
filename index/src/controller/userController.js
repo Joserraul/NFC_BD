@@ -1,5 +1,19 @@
 const UserModel = require('../utils/userModel');
 
+/**
+ * Crea un nuevo usuario en la base de datos
+ * @param {Object} req - Objeto de solicitud HTTP de Express
+ * @param {Object} req.body - Datos del usuario a crear
+ * @param {string} req.body.username - Nombre de usuario
+ * @param {string} req.body.password - Contraseña del usuario
+ * @param {string} req.body.role - Rol del usuario
+ * @param {string} req.body.phone - Teléfono del usuario
+ * @param {string} req.body.department - Departamento del usuario
+ * @param {string} req.body.email - Email del usuario
+ * @param {Object} res - Objeto de respuesta HTTP de Express
+ * @returns {Object} JSON con mensaje de éxito y datos del usuario creado
+ */
+
 const createUser = async (req, res) => {
   try {
     const { username, password, role, phone, department, email } = req.body;

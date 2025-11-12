@@ -2,6 +2,12 @@ const authMiddlewware = require('jsonwebtoken');
 
 const jwtSecret = process.env.JWT_SECRET || 'ThisIsASecretKey';
 
+/**
+ * @verefyToken Middleware para verificar el token JWT del encabezado de Autorización
+ * Si es válido, adjunta la información del usuario a req.user
+ * Si es inválido o falta, responde con el error apropiado
+ */
+
 const verefyToken = (req, res, next) => {
 
   let token; 

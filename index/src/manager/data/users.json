@@ -10,5 +10,17 @@
     "createdAt": 1762283619089,
     "role": "usuario",
     "active": true
+  },
+  {
+    "id": 2,
+    "username": "Rommel",
+    "email": "rommel@yimail.com",
+    "password": "$2b$10$JTBCzr0GoIZOT3p0ROkjFupVfRxHgtEu3v0cQlbRezzfQ5bxKGYRa",
+    "phone": "9238932",
+    "department": "quimicos",
+    "idCard": "f8f75f1209b421f7917d8123a94e19b78061235bcc934c10085eab30492b04ac",
+    "createdAt": 1762716752953,
+    "role": "usuario",
+    "active": true
   }
 ]

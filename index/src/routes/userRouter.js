@@ -1,11 +1,8 @@
-// src/routes/userRoutes.js
 const express = require('express');
 
-// La función toma el manager instanciado como argumento
 module.exports = (userManager) => {
     const router = express.Router();
 
-    // POST /register: CREATE
     router.post('/register', async (req, res) => {
         try {
             const newUser = await userManager.createUser(req.body);
@@ -18,10 +15,9 @@ module.exports = (userManager) => {
         }
     });
 
-    // POST /login: Authentication
     router.post('/login', async (req, res) => {
         try {
-            // Accept either english or spanish keys
+
             const { username, email, password, usuario, contrasena } = req.body;
             const identifier = username || email || usuario;
             const rawPassword = password || contrasena;
@@ -36,7 +32,7 @@ module.exports = (userManager) => {
         }
     });
 
-    // GET /: READ All
+
     router.get('/', async (req, res) => {
         try {
             const users = await userManager.listUsers(true);
@@ -46,7 +42,6 @@ module.exports = (userManager) => {
         }
     });
 
-    // GET /:id: READ By ID
     router.get('/:id', async (req, res) => {
         try {
             const id = req.params.id;
@@ -57,7 +52,6 @@ module.exports = (userManager) => {
         }
     });
 
-    // PUT /:id: UPDATE
     router.put('/:id', async (req, res) => {
         try {
             const id = req.params.id;
@@ -72,7 +66,6 @@ module.exports = (userManager) => {
         }
     });
 
-    // DELETE /:id: DELETE
     router.delete('/:id', async (req, res) => {
         try {
             const id = req.params.id;

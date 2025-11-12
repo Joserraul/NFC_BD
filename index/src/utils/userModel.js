@@ -1,6 +1,24 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+/**
+ * @UserSchema Esquema y Modelo para la Colección de Usuarios
+ * Campos:
+ * - username: Nombre de usuario único para el usuario (requerido)
+ * - name: Nombre completo del usuario (opcional)
+ * - email: Dirección de correo electrónico del usuario (requerido, único)
+ * - password: Contraseña para el usuario (requerida)
+ * - role: Rol del usuario (requerido, enum: 'admin', 'portero', 'usuario')
+ * - phone: Número de teléfono del usuario (opcional)
+ * - department: Departamento del usuario (opcional)
+ * - idCardHash: Hash de la cédula de identidad del usuario (opcional)
+ * - active: Estado de la cuenta del usuario (por defecto: true)
+ *  UserSchema.pre('save', ...): Middleware para hashear la contraseña antes de guardar el usuario.
+ *  UserSchema.methods.matchPassword: Método de instancia para comparar contraseñas.
+ *  Transformación toJSON: Elimina campos sensibles (contraseña, __v) al convertir a JSON.
+ */
+
+
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
